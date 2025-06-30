@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
-require('dotenv').config();
 
 const app = express();
 app.use(cors());
@@ -9,7 +8,11 @@ app.use(express.json());
 
 // PostgreSQL setup
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  user: 'postgres',
+  host: 'localhost',
+  database: 'admin_console',
+  password: 'aya@gu22',
+  port: 5432, // Default PostgreSQL port
 });
 
 app.get('/api/users', async (req, res) => {
