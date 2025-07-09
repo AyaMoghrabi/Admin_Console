@@ -5,7 +5,11 @@ function Hierarchy() {
   const [hierarchy, setHierarchy] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/hierarchy")
+    fetch("http://localhost:5000/api/hierarchy", {
+      headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      }
+    })
       .then((res) => res.json())
       .then((data) => setHierarchy(data));
   }, []);

@@ -5,7 +5,11 @@ function Permissions() {
   const [permissions, setPermissions] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/permissions")
+    fetch("http://localhost:5000/api/permissions", {
+      headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      }
+    })
       .then((res) => res.json())
       .then((data) => setPermissions(data));
   }, []);

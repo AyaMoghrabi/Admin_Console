@@ -5,7 +5,11 @@ function Roles() {
   const [roles, setRoles] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/roles")
+    fetch("http://localhost:5000/api/roles", {
+      headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      }
+    })
       .then((res) => res.json())
       .then((data) => setRoles(data));
   }, []);

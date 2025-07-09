@@ -10,7 +10,11 @@ function Users() {
   }, []);
 
   const fetchUsers = async () => {
-    const res = await fetch("http://localhost:5000/api/users");
+    const res = await fetch("http://localhost:5000/api/users", {
+      headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      }
+    });
     const data = await res.json();
     setUsers(data);
   };
@@ -33,6 +37,9 @@ function Users() {
   const handleDelete = async (id) => {
     await fetch(`http://localhost:5000/api/users/${id}`, {
       method: "DELETE",
+      headers: {
+        "Authorization": "Bearer " + localStorage.getItem("token")
+      }
     });
     fetchUsers();
   };
@@ -41,36 +48,14 @@ function Users() {
     <div className="table-container">
       <h2>Users</h2>
 
-      <form onSubmit={handleSubmit} style={{ marginBottom: "20px" }}>
-        <input
-          type="text"
-          name="name"
-          placeholder="Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }}
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }}
-        />
-        <button type="submit" className="button">Add User</button>
-      </form>
-
       <table>
         <thead>
-          <tr><th>ID</th><th>Name</th><th>Email</th><th>Action</th></tr>
+          <tr><th>Name</th><th>Email</th><th>Action</th></tr>
         </thead>
         <tbody>
           {users.map((user) => (
             <tr key={user.id}>
-              <td>{user.id}</td><td>{user.name}</td><td>{user.email}</td>
+              <td>{user.name}</td><td>{user.email}</td>
               <td>
                 <button
                   className="button"
