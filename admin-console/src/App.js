@@ -22,9 +22,9 @@ function App() {
   const isAuth = isAuthenticated();
   const hideSidebar = location.pathname === '/' || location.pathname === '/register';
   return (
-    <div className="App" style={{ display: "flex" }}>
+      <div className="App" style={{ display: "flex" }}>
       {!hideSidebar && isAuth && <Sidebar />}
-      <Routes>
+        <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/users" element={<PrivateRoute><Users /></PrivateRoute>} />
@@ -32,8 +32,8 @@ function App() {
         <Route path="/permissions" element={<PrivateRoute><Permissions /></PrivateRoute>} />
         <Route path="/hierarchy" element={<PrivateRoute><Hierarchy /></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </div>
+        </Routes>
+      </div>
   );
 }
 
