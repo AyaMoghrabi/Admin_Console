@@ -56,10 +56,9 @@ app.post('/api/register', async (req, res) => {
     // Hash the password with the generated salt
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const plainPasswordSalt = password + salt;
     await pool.query(
-      'INSERT INTO users (name, email, plain_password, salt, plain_password_salt, hashed_password) VALUES ($1, $2, $3, $4, $5, $6)',
-      [name, email, password, salt, plainPasswordSalt, hashedPassword]
+      'INSERT INTO users (name, email, hashed_password) VALUES ($1, $2, $3)',
+      [name, email, hashedPassword]
     );
     res.status(201).send('User registered');
   } catch (err) {
