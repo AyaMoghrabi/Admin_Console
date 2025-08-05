@@ -3,21 +3,25 @@ import react from "react";
 export const SidebarData = [
     {
         title: "Users",
-        link: "/users"
+        link: "/users",
+        icon: "👥"
     },
 
     {
         title: "Roles",
-        link: "/roles"
+        link: "/roles",
+        icon: "🔐"
     },
 
     {
         title: "Permissions",
-        link: "/permissions"
+        link: "/permissions",
+        icon: "🔑"
     },
 
     {
         title: "Hierarchy",
-        link: "/hierarchy"
+        link: "/hierarchy",
+        icon: "📊"
     }
 ]

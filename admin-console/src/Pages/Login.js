@@ -20,6 +20,7 @@ const Login = () => {
       const data = await response.json();
       if (response.ok && data.token) {
         localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         navigate('/users'); // Redirect to main app page
       } else {
         setError(data.message || 'Login failed');

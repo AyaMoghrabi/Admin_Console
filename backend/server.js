@@ -37,7 +37,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'admin_console',
-  password: 'your_password', //Replace with actual password or use env var
+  password: 'aya@gu22', //Replace with actual password or use env var
   port: 5432,
 });
 
@@ -98,7 +98,14 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+    res.json({ 
+      token, 
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name || user.email.split('@')[0]
+      }
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Error logging in');
@@ -131,6 +138,24 @@ app.get('/api/users', authenticateToken, async (req, res) => {
   res.json(result.rows);
 });
 
+app.get('/api/profile', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, email, name FROM users WHERE id = $1', [req.user.userId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const user = result.rows[0];
+    res.json({
+      id: user.id,
+      email: user.email,
+      name: user.name || user.email.split('@')[0]
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error fetching profile');
+  }
+});
+
 app.delete('/api/users/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
@@ -143,36 +168,104 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
 });
 
 app.get('/api/roles', authenticateToken, async (req, res) => {
-  const result = await pool.query('SELECT * FROM roles');
-  res.json(result.rows);
+  try {
+    const result = await pool.query('SELECT * FROM roles');
+    console.log('Roles data:', result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching roles:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 app.post('/api/roles', authenticateToken, async (req, res) => {
-  const { name } = req.body;
-  await pool.query('INSERT INTO roles (name) VALUES ($1)', [name]);
-  res.send('Role added');
+  try {
+    const { role } = req.body;
+    await pool.query('INSERT INTO roles (role) VALUES ($1)', [role]);
+    res.send('Role added');
+  } catch (err) {
+    console.error('Error adding role:', err);
+    res.status(500).send('Error adding role');
+  }
 });
 
 app.get('/api/permissions', authenticateToken, async (req, res) => {
-  const result = await pool.query('SELECT * FROM permissions');
-  res.json(result.rows);
+  try {
+    const result = await pool.query('SELECT * FROM permissions');
+    console.log('Permissions data:', result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching permissions:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 app.post('/api/permissions', authenticateToken, async (req, res) => {
-  const { name } = req.body;
-  await pool.query('INSERT INTO permissions (name) VALUES ($1)', [name]);
-  res.send('Permission added');
+  try {
+    const { permission } = req.body;
+    await pool.query('INSERT INTO permissions (permission) VALUES ($1)', [permission]);
+    res.send('Permission added');
+  } catch (err) {
+    console.error('Error adding permission:', err);
+    res.status(500).send('Error adding permission');
+  }
 });
 
 app.get('/api/hierarchy', authenticateToken, async (req, res) => {
-  const result = await pool.query('SELECT * FROM hierarchy');
-  res.json(result.rows);
+  try {
+    const result = await pool.query('SELECT * FROM hierarchy');
+    console.log('Hierarchy data:', result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching hierarchy:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 app.post('/api/hierarchy', authenticateToken, async (req, res) => {
-  const { parent_id, child_id } = req.body;
-  await pool.query('INSERT INTO hierarchy (parent_id, child_id) VALUES ($1, $2)', [parent_id, child_id]);
-  res.send('Hierarchy entry added');
+  try {
+    const { level, description } = req.body;
+    await pool.query('INSERT INTO hierarchy (level, description) VALUES ($1, $2)', [level, description]);
+    res.send('Hierarchy entry added');
+  } catch (err) {
+    console.error('Error adding hierarchy entry:', err);
+    res.status(500).send('Error adding hierarchy entry');
+  }
+});
+
+// === Test Database Connection ===
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ 
+      message: 'Database connected successfully',
+      timestamp: result.rows[0].now
+    });
+  } catch (err) {
+    console.error('Database connection error:', err);
+    res.status(500).json({ error: 'Database connection failed' });
+  }
+});
+
+app.get('/api/check-tables', async (req, res) => {
+  try {
+    const tables = ['users', 'roles', 'permissions', 'hierarchy'];
+    const results = {};
+    
+    for (const table of tables) {
+      try {
+        const result = await pool.query(`SELECT COUNT(*) FROM ${table}`);
+        results[table] = { exists: true, count: parseInt(result.rows[0].count) };
+      } catch (err) {
+        results[table] = { exists: false, error: err.message };
+      }
+    }
+    
+    res.json(results);
+  } catch (err) {
+    console.error('Error checking tables:', err);
+    res.status(500).json({ error: 'Failed to check tables' });
+  }
 });
 
 // === Start Server ===
