@@ -6,7 +6,7 @@ function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [addFormData, setAddFormData] = useState({ name: "", email: "", password: "" });
+  const [addFormData, setAddFormData] = useState({ name: "", email: "" });
 
   const columns = [
     { key: "id", label: "ID" },
@@ -61,14 +61,20 @@ function Users() {
     
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:5000/api/register", {
+      const token = localStorage.getItem('token');
+      const response = await fetch("http://localhost:5000/api/users", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': 'Bearer ' + token
+        },
         body: JSON.stringify(addFormData),
       });
       
       if (response.ok) {
-        setAddFormData({ name: "", email: "", password: "" });
+        const result = await response.json();
+        alert(`User created successfully!\n\nDefault password: ${result.defaultPassword}\n\nPlease share this password with the user.`);
+        setAddFormData({ name: "", email: "" });
         setShowAddForm(false);
         fetchUsers();
       } else {

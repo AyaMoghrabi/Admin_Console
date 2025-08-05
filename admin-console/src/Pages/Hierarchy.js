@@ -93,6 +93,26 @@ function Hierarchy() {
     }
   };
 
+  const handleDeleteHierarchy = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/hierarchy/${id}`, {
+        method: "DELETE",
+        headers: { 
+          'Authorization': 'Bearer ' + token
+        },
+      });
+      
+      if (response.ok) {
+        fetchHierarchy(); // Refresh the list
+      } else {
+        console.error('Error deleting hierarchy entry');
+      }
+    } catch (error) {
+      console.error('Error deleting hierarchy entry:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="table-container">
@@ -128,6 +148,7 @@ function Hierarchy() {
       addFormData={addFormData}
       onAddFormChange={handleAddFormChange}
       onAddFormSubmit={handleAddFormSubmit}
+      onDelete={handleDeleteHierarchy}
     />
   );
 }

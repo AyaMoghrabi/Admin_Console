@@ -92,6 +92,26 @@ function Permissions() {
     }
   };
 
+  const handleDeletePermission = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/permissions/${id}`, {
+        method: "DELETE",
+        headers: { 
+          'Authorization': 'Bearer ' + token
+        },
+      });
+      
+      if (response.ok) {
+        fetchPermissions(); // Refresh the list
+      } else {
+        console.error('Error deleting permission');
+      }
+    } catch (error) {
+      console.error('Error deleting permission:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="table-container">
@@ -127,6 +147,7 @@ function Permissions() {
       addFormData={addFormData}
       onAddFormChange={handleAddFormChange}
       onAddFormSubmit={handleAddFormSubmit}
+      onDelete={handleDeletePermission}
     />
   );
 }

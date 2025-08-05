@@ -77,7 +77,10 @@ app.post('/api/register', async (req, res) => {
       'INSERT INTO users (name, email, hashed_password) VALUES ($1, $2, $3)',
       [name, email, hashedPassword]
     );
-    res.status(201).send('User registered');
+    res.status(201).json({ 
+      message: 'User registered successfully',
+      user: { name, email }
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Error registering user');
@@ -167,6 +170,30 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
   }
 });
 
+app.post('/api/users', authenticateToken, async (req, res) => {
+  const { name, email } = req.body;
+  try {
+    // Generate a default password
+    const defaultPassword = 'password123';
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(defaultPassword, salt);
+    
+    await pool.query(
+      'INSERT INTO users (name, email, hashed_password) VALUES ($1, $2, $3)',
+      [name, email, hashedPassword]
+    );
+    
+    res.status(201).json({ 
+      message: 'User created successfully',
+      user: { name, email },
+      defaultPassword: defaultPassword
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error creating user');
+  }
+});
+
 app.get('/api/roles', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM roles');
@@ -186,6 +213,17 @@ app.post('/api/roles', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error adding role:', err);
     res.status(500).send('Error adding role');
+  }
+});
+
+app.delete('/api/roles/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM roles WHERE id = $1', [id]);
+    res.status(200).send('Role deleted');
+  } catch (err) {
+    console.error('Error deleting role:', err);
+    res.status(500).send('Error deleting role');
   }
 });
 
@@ -211,6 +249,17 @@ app.post('/api/permissions', authenticateToken, async (req, res) => {
   }
 });
 
+app.delete('/api/permissions/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM permissions WHERE id = $1', [id]);
+    res.status(200).send('Permission deleted');
+  } catch (err) {
+    console.error('Error deleting permission:', err);
+    res.status(500).send('Error deleting permission');
+  }
+});
+
 app.get('/api/hierarchy', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM hierarchy');
@@ -230,6 +279,17 @@ app.post('/api/hierarchy', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error adding hierarchy entry:', err);
     res.status(500).send('Error adding hierarchy entry');
+  }
+});
+
+app.delete('/api/hierarchy/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM hierarchy WHERE id = $1', [id]);
+    res.status(200).send('Hierarchy entry deleted');
+  } catch (err) {
+    console.error('Error deleting hierarchy entry:', err);
+    res.status(500).send('Error deleting hierarchy entry');
   }
 });
 

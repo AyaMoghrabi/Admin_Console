@@ -92,6 +92,26 @@ function Roles() {
     }
   };
 
+  const handleDeleteRole = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/roles/${id}`, {
+        method: "DELETE",
+        headers: { 
+          'Authorization': 'Bearer ' + token
+        },
+      });
+      
+      if (response.ok) {
+        fetchRoles(); // Refresh the list
+      } else {
+        console.error('Error deleting role');
+      }
+    } catch (error) {
+      console.error('Error deleting role:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="table-container">
@@ -127,6 +147,7 @@ function Roles() {
       addFormData={addFormData}
       onAddFormChange={handleAddFormChange}
       onAddFormSubmit={handleAddFormSubmit}
+      onDelete={handleDeleteRole}
     />
   );
 }
