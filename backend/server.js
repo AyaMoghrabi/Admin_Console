@@ -7,24 +7,26 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-
 const { IpFilter } = require('express-ipfilter');
-const blockedIps = require('./blockedIPs'); // Blacklist
 
+// Import rate limiter and connection limiter
+const rateLimiter = require('./middlewares/rateLimiter');
 
-
+// Import IP restriction middleware
+const blockedIps = require('./middlewares/ipRestriction/blockedIPs');
+const ipRestrictionMiddleware = require('./middlewares/ipRestriction/ipRestrictionMiddleware');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-// ...existing code...
-const ipRestrictionMiddleware = require('./ipRestrictionMiddleware');
-app.use(ipRestrictionMiddleware);
-// ...existing code...
 // === IP Blacklist Middleware ===
+app.use(ipRestrictionMiddleware);  // Apply IP restriction middleware
+
+// Use the IP filter to block specific IPs
 app.use(IpFilter(blockedIps, { mode: 'deny', detectIp: (req) => req.ip }));
+
+// Handle errors for blocked IPs
 app.use((err, req, res, next) => {
   if (err.name === 'IpDeniedError') {
     return res.status(401).json({ error: 'Your IP is blocked' });
@@ -32,12 +34,19 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
+// === Apply Rate Limiter ===
+app.use(rateLimiter);  // Apply rate limiter globally
+
+// === Apply Connection Limiter ===
+
+
+
 // === PostgreSQL setup ===
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'admin_console',
-  password: 'your_password', //Replace with actual password or use env var
+  password: 'aya@gu22', // Replace with actual password or use env var
   port: 5432,
 });
 
@@ -139,193 +148,6 @@ function authenticateToken(req, res, next) {
 app.get('/api/users', authenticateToken, async (req, res) => {
   const result = await pool.query('SELECT * FROM users');
   res.json(result.rows);
-});
-
-app.get('/api/profile', authenticateToken, async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, email, name FROM users WHERE id = $1', [req.user.userId]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    const user = result.rows[0];
-    res.json({
-      id: user.id,
-      email: user.email,
-      name: user.name || user.email.split('@')[0]
-    });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Error fetching profile');
-  }
-});
-
-app.delete('/api/users/:id', authenticateToken, async (req, res) => {
-  const { id } = req.params;
-  try {
-    await pool.query('DELETE FROM users WHERE id = $1', [id]);
-    res.status(200).send('User deleted');
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Error deleting user');
-  }
-});
-
-app.post('/api/users', authenticateToken, async (req, res) => {
-  const { name, email } = req.body;
-  try {
-    // Generate a default password
-    const defaultPassword = 'password123';
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(defaultPassword, salt);
-    
-    await pool.query(
-      'INSERT INTO users (name, email, hashed_password) VALUES ($1, $2, $3)',
-      [name, email, hashedPassword]
-    );
-    
-    res.status(201).json({ 
-      message: 'User created successfully',
-      user: { name, email },
-      defaultPassword: defaultPassword
-    });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Error creating user');
-  }
-});
-
-app.get('/api/roles', authenticateToken, async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM roles');
-    console.log('Roles data:', result.rows);
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching roles:', err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-app.post('/api/roles', authenticateToken, async (req, res) => {
-  try {
-    const { role } = req.body;
-    await pool.query('INSERT INTO roles (role) VALUES ($1)', [role]);
-    res.send('Role added');
-  } catch (err) {
-    console.error('Error adding role:', err);
-    res.status(500).send('Error adding role');
-  }
-});
-
-app.delete('/api/roles/:id', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    await pool.query('DELETE FROM roles WHERE id = $1', [id]);
-    res.status(200).send('Role deleted');
-  } catch (err) {
-    console.error('Error deleting role:', err);
-    res.status(500).send('Error deleting role');
-  }
-});
-
-app.get('/api/permissions', authenticateToken, async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM permissions');
-    console.log('Permissions data:', result.rows);
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching permissions:', err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-app.post('/api/permissions', authenticateToken, async (req, res) => {
-  try {
-    const { permission } = req.body;
-    await pool.query('INSERT INTO permissions (permission) VALUES ($1)', [permission]);
-    res.send('Permission added');
-  } catch (err) {
-    console.error('Error adding permission:', err);
-    res.status(500).send('Error adding permission');
-  }
-});
-
-app.delete('/api/permissions/:id', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    await pool.query('DELETE FROM permissions WHERE id = $1', [id]);
-    res.status(200).send('Permission deleted');
-  } catch (err) {
-    console.error('Error deleting permission:', err);
-    res.status(500).send('Error deleting permission');
-  }
-});
-
-app.get('/api/hierarchy', authenticateToken, async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM hierarchy');
-    console.log('Hierarchy data:', result.rows);
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching hierarchy:', err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-app.post('/api/hierarchy', authenticateToken, async (req, res) => {
-  try {
-    const { level, description } = req.body;
-    await pool.query('INSERT INTO hierarchy (level, description) VALUES ($1, $2)', [level, description]);
-    res.send('Hierarchy entry added');
-  } catch (err) {
-    console.error('Error adding hierarchy entry:', err);
-    res.status(500).send('Error adding hierarchy entry');
-  }
-});
-
-app.delete('/api/hierarchy/:id', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    await pool.query('DELETE FROM hierarchy WHERE id = $1', [id]);
-    res.status(200).send('Hierarchy entry deleted');
-  } catch (err) {
-    console.error('Error deleting hierarchy entry:', err);
-    res.status(500).send('Error deleting hierarchy entry');
-  }
-});
-
-// === Test Database Connection ===
-app.get('/api/test-db', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    res.json({ 
-      message: 'Database connected successfully',
-      timestamp: result.rows[0].now
-    });
-  } catch (err) {
-    console.error('Database connection error:', err);
-    res.status(500).json({ error: 'Database connection failed' });
-  }
-});
-
-app.get('/api/check-tables', async (req, res) => {
-  try {
-    const tables = ['users', 'roles', 'permissions', 'hierarchy'];
-    const results = {};
-    
-    for (const table of tables) {
-      try {
-        const result = await pool.query(`SELECT COUNT(*) FROM ${table}`);
-        results[table] = { exists: true, count: parseInt(result.rows[0].count) };
-      } catch (err) {
-        results[table] = { exists: false, error: err.message };
-      }
-    }
-    
-    res.json(results);
-  } catch (err) {
-    console.error('Error checking tables:', err);
-    res.status(500).json({ error: 'Failed to check tables' });
-  }
 });
 
 // === Start Server ===
