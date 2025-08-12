@@ -46,7 +46,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'admin_console',
-  password: 'aya@gu22', // Replace with actual password or use env var
+  password: 'your_password', // Replace with actual password or use env var
   port: 5432,
 });
 
