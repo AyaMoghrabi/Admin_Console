@@ -9,16 +9,15 @@ const path = require('path');
 const crypto = require('crypto');
 const { IpFilter } = require('express-ipfilter');
 
-// Import rate limiter and connection limiter
 const rateLimiter = require('./middlewares/rateLimiter');
-
-// Import IP restriction middleware
 const blockedIps = require('./middlewares/ipRestriction/blockedIPs');
 const ipRestrictionMiddleware = require('./middlewares/ipRestriction/ipRestrictionMiddleware');
+const connectionLimit = require('./middlewares/connectionLimit');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(connectionLimit);
 
 // === IP Blacklist Middleware ===
 app.use(ipRestrictionMiddleware);  // Apply IP restriction middleware
@@ -38,8 +37,7 @@ app.use((err, req, res, next) => {
 app.use(rateLimiter);  // Apply rate limiter globally
 
 // === Apply Connection Limiter ===
-
-
+app.use(connectionLimit);  // Apply connection limiter globally
 
 // === PostgreSQL setup ===
 const pool = new Pool({
